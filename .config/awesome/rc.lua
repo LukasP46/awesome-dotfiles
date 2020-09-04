@@ -172,6 +172,18 @@ awful.screen.connect_for_each_screen(function(s)
         }
     }
 
+    --[[ Overlay 
+    s.myoverlaly = wibox({
+        border_width = 0,
+        --ontop = true,
+        visible = false,
+        x = 0,
+        y = 0,
+        height = s.geometry.height,
+        width = s.geometry.width,
+        bg = "#00000000"
+    })]]
+
     -- Create the wibox
     s.mywibox = awful.wibar({ position = "top", screen = s })
 
@@ -284,6 +296,11 @@ globalkeys = gears.table.join(
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end,
               {description = "show the menubar", group = "launcher"}),
+    awful.key({ modkey }, "g", function()
+        awful.screen.focused().myoverlaly.visible = true
+        awful.spawn("ulauncher")
+    end,
+    {description = "show the menubar", group = "launcher"}),
 
     -- More
     awful.key({ modkey }, "F12",
@@ -451,7 +468,13 @@ awful.rules.rules = {
 
     -- ulauncher
     { rule = { instance = "ulauncher" },
-    properties = { border_width = 0, floating = true } }
+    properties = {
+        float = true,
+        fullscreen = true,
+        border_width = 0,
+        ontop = true,
+    }  }
+    
 
     -- Set Firefox to always map on the tag named "2" on screen 1.
     -- { rule = { class = "Firefox" },
@@ -479,15 +502,23 @@ client.connect_signal("mouse::enter", function(c)
     c:emit_signal("request::activate", "mouse_enter", {raise = false})
 end)
 
-client.connect_signal("focus", function(c) c.border_color = beautiful.border_focus end)
-client.connect_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
+client.connect_signal("focus", function(c) 
+    --if not string.match(c.instance, "ulauncher") then
+        c.border_color = beautiful.border_focus
+    --end
+end)
+client.connect_signal("unfocus", function(c)
+    --if not string.match(c.instance, "ulauncher") then
+        c.border_color = beautiful.border_normal
+    --end
+end)
 -- }}}
 
 -- Auto-run
 do
     local cmds =
     {
-      "picom -b",
+      "picom -b --experimental-backends",
       "ulauncher --hide-window",
       "nm-applet"
     }
@@ -501,6 +532,6 @@ do
 awesome.connect_signal(
     'exit',
     function(args)
-        awful.spawn.with_shell('killall ulauncher')
+        awful.spawn.with_shell('pkill -f "python3 /usr/local/bin/ulauncher --hide-window"')
     end
 )
