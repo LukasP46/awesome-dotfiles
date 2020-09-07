@@ -131,6 +131,21 @@ theme.border_radius = theme.gtk.button_border_radius
 
 theme.useless_gap   = 0
 
+theme.transparent_bg = string.sub(theme.wibar_bg, 1, 7) .. "66"
+
+function os.capture(cmd, raw)
+    local f = assert(io.popen(cmd, 'r'))
+    local s = assert(f:read('*a'))
+    f:close()
+    if raw then return s end
+    s = string.gsub(s, '^%s+', '')
+    s = string.gsub(s, '%s+$', '')
+    s = string.gsub(s, '[\n\r]+', ' ')
+    return s
+end
+
+theme.icon_dir      = "/usr/share/icons/" .. os.capture("xfconf-query -c xsettings -p /Net/IconThemeName", false) .. "/"
+
 local rounded_rect_shape = function(cr,w,h)
     gears_shape.rounded_rect(
         cr, w, h, theme.border_radius
@@ -210,7 +225,7 @@ index 231a2f68c..533a859d2 100644
      s.mytasklist = awful.widget.tasklist {
          screen  = s,
          filter  = awful.widget.tasklist.filter.currenttags,
-+        buttons = tasklist_buttons,
++        buttons = tasklist_buttons,dpi
 +        widget_template = beautiful.tasklist_widget_template
 -        buttons = tasklist_buttons
      }

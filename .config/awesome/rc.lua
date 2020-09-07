@@ -17,6 +17,9 @@ local hotkeys_popup = require("awful.hotkeys_popup")
 -- Enable hotkeys help widget for VIM and other apps
 -- when client with a matching name is opened:
 require("awful.hotkeys_popup.keys")
+local dpi = require("beautiful.xresources").apply_dpi
+
+local spotify_widget = require("awesome-wm-widgets.spotify-widget.spotify")
 
 -- {{{ Error handling
 -- Check if awesome encountered an error during startup and fell back to
@@ -172,17 +175,69 @@ awful.screen.connect_for_each_screen(function(s)
         }
     }
 
-    --[[ Overlay 
+    -- Overlay 
     s.myoverlaly = wibox({
         border_width = 0,
-        --ontop = true,
+        ontop = true,
         visible = false,
         x = 0,
         y = 0,
         height = s.geometry.height,
         width = s.geometry.width,
-        bg = "#00000000"
-    })]]
+        bg = beautiful.transparent_bg
+    })
+    s.myoverlaly.brightness_widget = wibox.widget{
+        max_value     = 255,
+        value         = 255,
+        forced_height = 20,
+        forced_width  = 100,
+        shape         = gears.shape.rounded_bar,
+        widget        = wibox.widget.progressbar,
+        background_color = beautiful.wibar_fg
+    }
+    s.myoverlaly.volume_widget = wibox.widget{
+        max_value     = 100,
+        value         = 20,
+        forced_height = 20,
+        forced_width  = 100,
+        shape         = gears.shape.rounded_bar,
+        widget        = wibox.widget.progressbar,
+        background_color = beautiful.wibar_fg
+    }
+    s.myoverlaly:setup {
+        {
+            {
+                {
+                    {
+                        image  = beautiful.icon_dir .. "16x16/actions/brightnesssettings.svg",
+                        resize = false,
+                        widget = wibox.widget.imagebox
+                    },
+                    right   = dpi(10),
+                    widget  = wibox.container.margin
+                },
+                s.myoverlaly.brightness_widget,
+                layout = wibox.layout.align.horizontal,
+            },
+            {
+                {
+                    {
+                        image  = beautiful.icon_dir .. "16x16/actions/audio-volume-high.svg",
+                        resize = false,
+                        widget = wibox.widget.imagebox
+                    },
+                    right   = dpi(10),
+                    widget  = wibox.container.margin
+                },
+                s.myoverlaly.volume_widget,
+                layout = wibox.layout.align.horizontal,
+            },
+            layout = wibox.layout.fixed.vertical,
+            spacing = dpi(10)
+        },
+        widget = wibox.container.margin,
+        margins = dpi(200)
+    }
 
     -- Create the wibox
     s.mywibox = awful.wibar({ position = "top", screen = s })
@@ -296,14 +351,23 @@ globalkeys = gears.table.join(
     -- Menubar
     awful.key({ modkey }, "p", function() menubar.show() end,
               {description = "show the menubar", group = "launcher"}),
-    awful.key({ modkey }, "g", function()
-        awful.screen.focused().myoverlaly.visible = true
-        awful.spawn("ulauncher")
-    end,
-    {description = "show the menubar", group = "launcher"}),
 
     -- More
-    awful.key({ modkey }, "F12",
+
+    -- Overlay Stuff
+    awful.key({ }, "XF86WakeUp",
+    function()
+        awful.screen.focused().myoverlaly.visible = true
+    end,
+    {description = "Show Overlay", group = "awesome"}),
+    awful.key({ }, "XF86WakeUp", nil,
+    function()
+        awful.screen.focused().myoverlaly.visible = false
+    end,
+    {description = "Hide Overlay", group = "awesome"}),
+
+    --awful.key({ modkey }, "F12",
+    awful.key({ }, "XF86Favorites",
     function()
         awful.spawn.with_shell("bash ~/.scripts/theme-switch.sh")
         --awful.screen.connect_for_each_screen(beautiful.at_screen_connect)
@@ -324,7 +388,43 @@ globalkeys = gears.table.join(
     function ()
         awful.util.spawn("flameshot gui -p /home/lukas/pictures/screenshots/")
     end,
-    {description = "screenshot section screen", group = "awesome"})
+    {description = "screenshot section screen", group = "awesome"}),
+
+    -- Volume and Mute
+    awful.key({ }, "XF86AudioMute", function () awful.spawn.with_shell("amixer sset -q -D pulse Master toggle") end,
+              {description = "mute audio", group = "awesome"}),
+    awful.key({ }, "XF86AudioRaiseVolume", function ()
+        local command = "amixer -D pulse sset Master 1%+"
+        awful.spawn.easy_async_with_shell(command, function(stdout)
+            awful.screen.focused().myoverlaly.volume_widget:set_value(tonumber(string.sub(stdout:match("%d+%%"), 1, -2)))
+        end)
+    end,
+    {description = "audio +5% volume", group = "awesome"}),
+    awful.key({ }, "XF86AudioLowerVolume", function ()
+        local command = "amixer -D pulse sset Master 1%-"
+        awful.spawn.easy_async_with_shell(command, function(stdout)
+            awful.screen.focused().myoverlaly.volume_widget:set_value(tonumber(string.sub(stdout:match("%d+%%"), 1, -2)))
+        end)
+    end,
+    {description = "audio -5% volume", group = "awesome"}),
+    awful.key({ }, "XF86AudioMicMute", function () awful.spawn.with_shell("amixer sset -q -D pulse Capture toggle; amixer -c 1 sset Capture toggle") end,
+              {description = "mute mic", group = "awesome"}),
+
+    -- Brightness
+    awful.key({ }, "XF86MonBrightnessDown", function ()
+        local command = "brightnessctl -q set 1%-; brightnessctl get"
+        awful.spawn.easy_async_with_shell(command, function(stdout)
+            awful.screen.focused().myoverlaly.brightness_widget:set_value(tonumber(stdout))
+        end)
+    end,
+    {description = "brighten screen", group = "awesome"}),
+    awful.key({ }, "XF86MonBrightnessUp", function ()
+        local command = "brightnessctl -q set +1%; brightnessctl get"
+        awful.spawn.easy_async_with_shell(command, function(stdout)
+            awful.screen.focused().myoverlaly.brightness_widget:set_value(tonumber(stdout))
+        end)
+    end,
+    {description = "brighten dimm", group = "awesome"})
 )
 
 clientkeys = gears.table.join(
@@ -515,6 +615,9 @@ end)
 -- }}}
 
 -- Auto-run
+-- Fix for Mic LED, set Master Volume to 20% and mute it
+awful.spawn.with_shell("amixer -c 1 sset Capture nocap; amixer -D pulse sset Capture nocap; amixer -D pulse sset Master 20%; amixer -D pulse sset Master mute")
+
 do
     local cmds =
     {
