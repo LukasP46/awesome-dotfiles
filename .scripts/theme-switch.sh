@@ -1,5 +1,5 @@
 #!/bin/bash
-if [ $(xfconf-query -c xsettings -p /Net/ThemeName) = "oomox-materia-red-light" ]
+if [[ $(xfconf-query -c xsettings -p /Net/ThemeName) == "oomox-materia-red-light" ]] || [[ -n $1 ]]
 then
 	xfconf-query -c xsettings -p /Net/ThemeName -s "oomox-materia-red-dark"
 	xfconf-query -c xsettings -p /Net/IconThemeName -s "Papirus-Dark"
