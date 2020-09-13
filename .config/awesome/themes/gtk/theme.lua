@@ -102,6 +102,8 @@ theme.gtk.menubar_border_color = mix(
 
 
 theme.font          = "Roboto Condesed Light 11"
+theme.font_raw          = "Roboto Condesed Light"
+theme.font_normal_raw          = "Roboto Condesed"
 
 theme.bg_normal     = theme.gtk.bg_color
 theme.fg_normal     = theme.gtk.fg_color

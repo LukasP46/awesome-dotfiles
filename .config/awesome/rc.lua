@@ -207,6 +207,20 @@ awful.screen.connect_for_each_screen(function(s)
     s.myoverlaly:setup {
         {
             {
+                widget  = wibox.widget.textclock,
+                refresh = 1,
+                format  = "%d.%m.%y",
+                align   = "center",
+                font    = beautiful.font_normal_raw .. " 16"
+            },
+            {
+                widget  = wibox.widget.textclock,
+                refresh = 1,
+                format  = "%H:%M:%S",
+                align   = "center",
+                font    = beautiful.font_raw .. " 64"
+            },
+            {
                 {
                     {
                         image  = beautiful.icon_dir .. "16x16/actions/brightnesssettings.svg",
@@ -258,7 +272,7 @@ awful.screen.connect_for_each_screen(function(s)
                     { 25, "red"   },
                     {999, beautiful.wibar_fg },
                 },
-                widget_text = "${AC_BAT}${color_on}${percent}%${color_off}",
+                widget_text = "${AC_BAT}${color_on}${percent}%${color_off} ",
                 tooltip_text = "Battery ${state}${time_est}",
                 alert_threshold = 5,
                 alert_timeout = 0,
@@ -266,7 +280,7 @@ awful.screen.connect_for_each_screen(function(s)
                 alert_text = "${AC_BAT}${time_est}"
             },
             wibox.widget.systray(),
-            wibox.widget.textclock("%d.%m.%y %H:%M:%S", 1),
+            wibox.widget.textclock(" %H:%M:%S ", 1),
             s.mylayoutbox,
         },
     }
