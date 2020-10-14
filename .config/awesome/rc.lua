@@ -253,6 +253,12 @@ awful.screen.connect_for_each_screen(function(s)
         margins = dpi(200)
     }
 
+
+    local command = "brightnessctl get"
+    awful.spawn.easy_async_with_shell(command, function(stdout)
+        s.myoverlaly.brightness_widget:set_value(tonumber(stdout))
+    end)
+
     -- Create the wibox
     s.mywibox = awful.wibar({ position = "top", screen = s })
 
@@ -376,6 +382,7 @@ globalkeys = gears.table.join(
     {description = "Show Overlay", group = "awesome"}),
     awful.key({ }, "XF86WakeUp", nil,
     function()
+        -- ToDo: Add refresh to values
         awful.screen.focused().myoverlaly.visible = false
     end,
     {description = "Hide Overlay", group = "awesome"}),
@@ -457,7 +464,31 @@ clientkeys = gears.table.join(
     awful.key({ modkey,           }, "o",      function (c) c:move_to_screen()               end,
               {description = "move to screen", group = "client"}),
     awful.key({ modkey,           }, "t",      function (c) c.ontop = not c.ontop            end,
-              {description = "toggle keep on top", group = "client"})
+              {description = "toggle keep on top", group = "client"}),    awful.key({ modkey,           }, "n",
+        function (c)
+            -- The client currently has the input focus, so it cannot be
+            -- minimized, since minimized clients can't have the focus.
+            c.minimized = true
+        end ,
+        {description = "minimize", group = "client"}),
+    awful.key({ modkey,           }, "m",
+        function (c)
+            c.maximized = not c.maximized
+            c:raise()
+        end ,
+        {description = "(un)maximize", group = "client"}),
+    awful.key({ modkey, "Control" }, "m",
+        function (c)
+            c.maximized_vertical = not c.maximized_vertical
+            c:raise()
+        end ,
+        {description = "(un)maximize vertically", group = "client"}),
+    awful.key({ modkey, "Shift"   }, "m",
+        function (c)
+            c.maximized_horizontal = not c.maximized_horizontal
+            c:raise()
+        end ,
+        {description = "(un)maximize horizontally", group = "client"})
 )
 
 -- Bind all key numbers to tags.
@@ -587,6 +618,21 @@ awful.rules.rules = {
         fullscreen = true,
         border_width = 0,
         ontop = true,
+    }  },
+
+    -- windows VM
+    { rule = { name = "windows-remote" },
+    properties = {
+        border_width = 0
+    }  },
+
+    -- windows VM
+    { rule = { class = "win10window" },
+    properties = {
+        float = false,
+        maximized = false,
+        border_width = 0,
+        type = "normal"
     }  }
     
 
@@ -637,7 +683,8 @@ do
     {
       "picom -b --experimental-backends",
       "ulauncher --hide-window",
-      "nm-applet"
+      "nm-applet",
+      "blueman-applet"
     }
   
     for _,i in pairs(cmds) do
