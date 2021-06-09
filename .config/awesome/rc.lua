@@ -66,11 +66,11 @@ modkey = "Mod4"
 awful.layout.layouts = {
     awful.layout.suit.tile,
     -- awful.layout.suit.tile.left,
-    -- awful.layout.suit.tile.bottom,
+    awful.layout.suit.tile.bottom,
     -- awful.layout.suit.tile.top,
     awful.layout.suit.floating,
     awful.layout.suit.fair,
-    -- awful.layout.suit.fair.horizontal,
+    --awful.layout.suit.fair.horizontal,
     -- awful.layout.suit.spiral,
     -- awful.layout.suit.spiral.dwindle,
     -- awful.layout.suit.max,
@@ -145,7 +145,11 @@ awful.screen.connect_for_each_screen(function(s)
     set_wallpaper(s)
 
     -- Each screen has its own tag table.
-    awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
+    if s.geometry.width > s.geometry.height then
+        awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[1])
+    else
+        awful.tag({ "1", "2", "3", "4", "5", "6", "7", "8", "9" }, s, awful.layout.layouts[2])
+    end
 
     -- Create a promptbox for each screen
     s.mypromptbox = awful.widget.prompt()
@@ -165,7 +169,7 @@ awful.screen.connect_for_each_screen(function(s)
     }
 
     -- Create a tasklist widget
-    s.mytasklist = awful.widget.tasklist {
+    --[[s.mytasklist = awful.widget.tasklist {
         screen  = s,
         filter  = awful.widget.tasklist.filter.focused,
         style = {
@@ -173,6 +177,49 @@ awful.screen.connect_for_each_screen(function(s)
             align = "center",
             background = "black"
         }
+    }]]
+    s.mytasklist = awful.widget.tasklist {
+        screen   = s,
+        filter   = awful.widget.tasklist.filter.currenttags,
+        buttons  = tasklist_buttons,
+        style    = {
+            tasklist_disable_icon = true,
+            align = "center",
+            background = "black"
+        },
+        layout   = {
+            spacing = 10,
+            spacing_widget = {
+                {
+                    forced_width = 5,
+                    shape        = gears.shape.circle,
+                    widget       = wibox.widget.separator
+                },
+                valign = "center",
+                halign = "center",
+                widget = wibox.container.place,
+            },
+            layout  = wibox.layout.flex.horizontal
+        },
+        -- Notice that there is *NO* wibox.wibox prefix, it is a template,
+        -- not a widget instance.
+        widget_template = {
+            {
+                {
+                    {
+                        id     = "text_role",
+                        align = "center",
+                        widget = wibox.widget.textbox,
+                    },
+                    layout = wibox.layout.fixed.horizontal,
+                },
+                left  = 5,
+                right = 5,
+                widget = wibox.container.margin
+            },
+            id     = "background_role",
+            widget = wibox.container.background,
+        },
     }
 
     -- Overlay 
@@ -180,8 +227,8 @@ awful.screen.connect_for_each_screen(function(s)
         border_width = 0,
         ontop = true,
         visible = false,
-        x = 0,
-        y = 0,
+        x = s.geometry.x,
+        y = s.geometry.y,
         height = s.geometry.height,
         width = s.geometry.width,
         bg = beautiful.transparent_bg
@@ -293,13 +340,11 @@ awful.screen.connect_for_each_screen(function(s)
 end)
 -- }}}
 
--- {{{ Mouse bindings
+
 root.buttons(gears.table.join(
-    -- awful.button({ }, 3, function () mymainmenu:toggle() end),
-    awful.button({ }, 4, awful.tag.viewnext),
-    awful.button({ }, 5, awful.tag.viewprev)
+    awful.button({ modkey }, 4, awful.tag.viewnext),
+    awful.button({ modkey }, 5, awful.tag.viewprev)
 ))
--- }}}
 
 -- {{{ Key bindings
 globalkeys = gears.table.join(
@@ -388,7 +433,7 @@ globalkeys = gears.table.join(
     {description = "Hide Overlay", group = "awesome"}),
 
     --awful.key({ modkey }, "F12",
-    awful.key({ }, "XF86Favorites",
+    awful.key({ modkey }, "F12",
     function()
         awful.spawn.with_shell("bash ~/.scripts/theme-switch.sh")
         --awful.screen.connect_for_each_screen(beautiful.at_screen_connect)
@@ -428,7 +473,7 @@ globalkeys = gears.table.join(
         end)
     end,
     {description = "audio -5% volume", group = "awesome"}),
-    awful.key({ }, "XF86AudioMicMute", function () awful.spawn.with_shell("amixer sset -q -D pulse Capture toggle; amixer -c 1 sset Capture toggle") end,
+    awful.key({ }, "XF86AudioMicMute", function () awful.spawn.with_shell("amixer sset -q -D pulse Capture toggle") end,
               {description = "mute mic", group = "awesome"}),
 
     -- Brightness
@@ -445,7 +490,12 @@ globalkeys = gears.table.join(
             awful.screen.focused().myoverlaly.brightness_widget:set_value(tonumber(stdout))
         end)
     end,
-    {description = "brighten dimm", group = "awesome"})
+    {description = "brighten dimm", group = "awesome"}),
+    -- Paste just Text
+    awful.key({ modkey }, "v", function ()
+        os.execute("xsel | tr -s '\n' ' ' | xsel -i; xdotool click --clearmodifiers 2; xdotool keyup Super_L; xdotool keyup --clearmodifiers Super_L")
+    end,
+    {description = "paste", group = "awesome"})
 )
 
 clientkeys = gears.table.join(
@@ -488,7 +538,13 @@ clientkeys = gears.table.join(
             c.maximized_horizontal = not c.maximized_horizontal
             c:raise()
         end ,
-        {description = "(un)maximize horizontally", group = "client"})
+        {description = "(un)maximize horizontally", group = "client"}),
+        awful.key({ modkey, "Shift"   }, "f",
+            function (c)
+                c.maximized = not c.maximized
+                c:raise()
+            end ,
+            {description = "(un)maximize", group = "client"})
 )
 
 -- Bind all key numbers to tags.
@@ -552,6 +608,12 @@ clientbuttons = gears.table.join(
     awful.button({ modkey }, 3, function (c)
         c:emit_signal("request::activate", "mouse_click", {raise = true})
         awful.mouse.client.resize(c)
+    end),
+    awful.button({ modkey }, 4, function (c)
+        awful.tag.viewnext(awful.mouse.screen)
+    end),
+    awful.button({ modkey }, 5, function (c)
+        awful.tag.viewprev(awful.mouse.screen)
     end)
 )
 
@@ -676,15 +738,16 @@ end)
 
 -- Auto-run
 -- Fix for Mic LED, set Master Volume to 20% and mute it
-awful.spawn.with_shell("amixer -c 1 sset Capture nocap; amixer -D pulse sset Capture nocap; amixer -D pulse sset Master 20%; amixer -D pulse sset Master mute")
+--awful.spawn.with_shell("amixer -c 1 sset Capture nocap; amixer -D pulse sset Capture nocap; amixer -D pulse sset Master 20%; amixer -D pulse sset Master mute")
 
 do
     local cmds =
     {
-      "picom -b --experimental-backends",
+      --"picom -b --experimental-backends",
       "ulauncher --hide-window",
       "nm-applet",
-      "blueman-applet"
+      "blueman-applet",
+      "redshift-gtk -l 49.87167:8.65027"
     }
   
     for _,i in pairs(cmds) do
@@ -697,5 +760,9 @@ awesome.connect_signal(
     'exit',
     function(args)
         awful.spawn.with_shell('pkill -f "python3 /usr/local/bin/ulauncher --hide-window"')
+        awful.spawn.with_shell('pkill -f "redshift-gtk"')
     end
 )
+
+-- Overlaysetuo
+--overlay_setup(s)

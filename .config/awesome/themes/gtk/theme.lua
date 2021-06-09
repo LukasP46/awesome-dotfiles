@@ -133,7 +133,12 @@ theme.border_radius = theme.gtk.button_border_radius
 
 theme.useless_gap   = 0
 
-theme.transparent_bg = string.sub(theme.wibar_bg, 1, 7) .. "66"
+--theme.transparent_bg = string.sub(theme.wibar_bg, 1, 7) .. "66"
+if is_dark(theme.wibar_bg) then
+    theme.transparent_bg = "#00000066"
+else
+    theme.transparent_bg = "#ffffff66"
+end
 
 function os.capture(cmd, raw)
     local f = assert(io.popen(cmd, 'r'))

@@ -29,10 +29,12 @@ fi
 
 export QT_QPA_PLATFORMTHEME=gtk2
 export QT_QPA_PLATFORMTHEME="qt5ct"
+export _JAVA_AWT_WM_NONREPARENTING=1
 
 xinput set-prop "ETPS/2 Elantech TrackPoint" "libinput Accel Speed" -0.4
 xss-lock ~/.scripts/lock.sh -l &
 xfsettingsd &
+xset -dpms
 bash ~/.scripts/theme-switch.sh init
 #bash "sleep 10; notify-send 'Time to do a backup?'"
 
